@@ -18,14 +18,14 @@ type Driver interface {
 }
 
 type Base struct {
-	connection *sqlx.DB
+	Connection *sqlx.DB
 }
 
 func (b *Base) Scan(t *domain.Table, publisher domain.ObjectPublisher) error {
 	query := fmt.Sprintf("SELECT %s FROM %q.%q", t.ColumnToSQL(), t.SchemaName, t.TableName)
 	log.Debugf("Executing query: %v", query)
 
-	rows, err := b.connection.Queryx(query)
+	rows, err := b.Connection.Queryx(query)
 	if err != nil {
 		return err
 	}
