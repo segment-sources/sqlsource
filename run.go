@@ -49,6 +49,8 @@ Options:
 `
 
 func Run(d driver.Driver) {
+	app := &driver.Base{d}
+
 	m, err := docopt.Parse(usage, nil, true, Version, false)
 	if err != nil {
 		logrus.Error(err)
@@ -97,14 +99,14 @@ func Run(d driver.Driver) {
 	}
 	defer schemaFile.Close()
 
-	if err := d.Init(config); err != nil {
+	if err := app.Driver.Init(config); err != nil {
 		logrus.Error(err)
 		return
 	}
 
 	// Initialize the source
 	if config.Init {
-		description, err := d.Describe()
+		description, err := app.Driver.Describe()
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -135,7 +137,7 @@ func Run(d driver.Driver) {
 		go func(table *domain.Table) {
 			defer sem.Release()
 			logrus.WithFields(logrus.Fields{"table": table.TableName, "schema": table.SchemaName}).Info("Scan started")
-			if err := d.Scan(table, setWrapper); err != nil {
+			if err := app.ScanTable(table, setWrapper); err != nil {
 				logrus.Error(err)
 			}
 			logrus.WithFields(logrus.Fields{"table": table.TableName, "schema": table.SchemaName}).Info("Scan finished")

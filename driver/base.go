@@ -14,18 +14,15 @@ import (
 type Driver interface {
 	Init(*domain.Config) error
 	Describe() (*domain.Description, error)
-	Scan(t *domain.Table, publisher domain.ObjectPublisher) error
+	Scan(t *domain.Table) (*sqlx.Rows, error)
 }
 
 type Base struct {
-	Connection *sqlx.DB
+	Driver Driver
 }
 
-func (b *Base) Scan(t *domain.Table, publisher domain.ObjectPublisher) error {
-	query := fmt.Sprintf("SELECT %s FROM %q.%q", t.ColumnToSQL(), t.SchemaName, t.TableName)
-	log.Debugf("Executing query: %v", query)
-
-	rows, err := b.Connection.Queryx(query)
+func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) error {
+	rows, err := b.Driver.Scan(t)
 	if err != nil {
 		return err
 	}
