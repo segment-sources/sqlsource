@@ -39,7 +39,6 @@ Options:
   -h --help                   Show this screen
   --version                   Show version
   --write-key=<key>           Segment source write key
-  --driver=<driver>           Choose the driver to use
   --concurrency=<c>           Number of concurrent table scans [default: 1]
   --hostname=<hostname>       Database instance hostname
   --port=<port>               Database instance port number
@@ -66,7 +65,6 @@ func Run(d driver.Driver) {
 
 	config := &domain.Config{
 		Init:         m["--init"].(bool),
-		Driver:       m["--driver"].(string),
 		Hostname:     m["--hostname"].(string),
 		Port:         m["--port"].(string),
 		Username:     m["--username"].(string),
@@ -149,6 +147,6 @@ func Run(d driver.Driver) {
 
 	// Log status
 	for table := range description.Iter() {
-		logrus.WithFields(logrus.Fields{"schema": table.SchemaName, "table": table.TableName, "count": table.ScannedRows}).Info("Sync Finished")
+		logrus.WithFields(logrus.Fields{"schema": table.SchemaName, "table": table.TableName, "count": table.State.ScannedRows}).Info("Sync Finished")
 	}
 }
