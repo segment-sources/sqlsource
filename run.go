@@ -24,6 +24,7 @@ Usage:
     [--debug]
     [--init]
     [--concurrency=<c>]
+    [--schema=<schema-path>]
     --write-key=<segment-write-key>
     --hostname=<hostname>
     --port=<port>
@@ -45,6 +46,7 @@ Options:
   --username=<username>       Database instance username
   --password=<password>       Database instance password
   --database=<database>       Database instance name
+  --schema=<schema-path>	  The path to the schema json file [default: schema.json]
 
 `
 
@@ -92,7 +94,7 @@ func Run(d driver.Driver) {
 	}
 
 	// Open the schema
-	schemaFile, err := os.OpenFile("schema.json", os.O_RDWR|os.O_CREATE, 0644)
+	schemaFile, err := os.OpenFile(m["--schema"].(string), os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		logrus.Error(err)
 		return
