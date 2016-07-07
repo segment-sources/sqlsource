@@ -44,7 +44,7 @@ func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) erro
 		}
 
 		publisher(&objects.Object{
-			ID:         snakecase.Snakecase(strings.Join(pks, "_")),
+			ID:         strings.Join(pks, "_"),
 			Collection: snakecase.Snakecase(fmt.Sprintf("%s_%s", t.SchemaName, t.TableName)),
 			Properties: row,
 		})
