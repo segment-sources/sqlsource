@@ -38,6 +38,7 @@ func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) erro
 		log.WithFields(log.Fields{"row": row, "table": t.TableName, "schema": t.SchemaName}).Debugf("Received Row")
 		t.IncrScanned()
 
+		row = b.Driver.Transform(row)
 		pks := []string{}
 		for _, p := range t.PrimaryKeys {
 			pks = append(pks, fmt.Sprintf("%v", row[p]))
