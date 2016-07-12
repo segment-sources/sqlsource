@@ -15,6 +15,7 @@ type Driver interface {
 	Init(*domain.Config) error
 	Describe() (*domain.Description, error)
 	Scan(t *domain.Table) (*sqlx.Rows, error)
+	Transform(row map[string]interface{}) map[string]interface{}
 }
 
 type Base struct {
