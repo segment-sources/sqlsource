@@ -42,7 +42,6 @@ func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) erro
 		pks := []string{}
 		for _, p := range t.PrimaryKeys {
 			pks = append(pks, fmt.Sprintf("%v", row[p]))
-			delete(row, p)
 		}
 
 		publisher(&objects.Object{
