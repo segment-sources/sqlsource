@@ -2,16 +2,15 @@ package sqlsource
 
 import (
 	"io"
-	"os"
 	"strconv"
 
+	"github.com/Lilibuth12/sqlsource/client"
+	"github.com/Lilibuth12/sqlsource/domain"
+	"github.com/Lilibuth12/sqlsource/driver"
 	"github.com/Sirupsen/logrus"
 	"github.com/asaskevich/govalidator"
-	"github.com/segment-sources/sqlsource/domain"
-	"github.com/segment-sources/sqlsource/driver"
 	"github.com/segmentio/objects-go"
 	"github.com/tj/docopt"
-	"github.com/tj/go-sync/semaphore"
 )
 
 const (
@@ -34,7 +33,7 @@ Usage:
     [-- <extra-driver-options>...]
   dbsource -h | --help
   dbsource --version
-
+$P
 Options:
     "github.com/segmentio/source-db-lib/internal/domain"
   -h --help                   Show this screen
@@ -57,14 +56,6 @@ func Run(d driver.Driver) {
 	if err != nil {
 		logrus.Error(err)
 		return
-	}
-
-	segmentClient := objects.New(m["--write-key"].(string))
-
-	setWrapper := func(o *objects.Object) {
-		if err := segmentClient.Set(o); err != nil {
-			logrus.WithFields(logrus.Fields{"id": o.ID, "collection": o.Collection, "properties": o.Properties}).Warn(err)
-		}
 	}
 
 	config := &domain.Config{
@@ -93,37 +84,14 @@ func Run(d driver.Driver) {
 		return
 	}
 
-	// Open the schema
-	schemaFile, err := os.OpenFile(m["--schema"].(string), os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-	defer schemaFile.Close()
-
-	if err := app.Driver.Init(config); err != nil {
-		logrus.Error(err)
-		return
-	}
-
 	// Initialize the source
+	filename := m["--schema"].(string)
 	if config.Init {
-		description, err := app.Driver.Describe()
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
-		if err := description.Save(schemaFile); err != nil {
-			logrus.Error(err)
-			return
-		}
-
-		schemaFile.Sync()
-		logrus.Infof("Saved to `%s`", schemaFile.Name())
+		client.InitSchema(app, config, filename)
 		return
 	}
 
-	description, err := domain.NewDescriptionFromReader(schemaFile)
+	description, err := client.ParseSchema(filename)
 	if err == io.EOF {
 		logrus.Error("Empty schema, did you run `--init`?")
 		return
@@ -132,25 +100,22 @@ func Run(d driver.Driver) {
 		return
 	}
 
-	sem := make(semaphore.Semaphore, concurrency)
-
-	for table := range description.Iter() {
-		sem.Acquire()
-		go func(table *domain.Table) {
-			defer sem.Release()
-			logrus.WithFields(logrus.Fields{"table": table.TableName, "schema": table.SchemaName}).Info("Scan started")
-			if err := app.ScanTable(table, setWrapper); err != nil {
-				logrus.Error(err)
-			}
-			logrus.WithFields(logrus.Fields{"table": table.TableName, "schema": table.SchemaName}).Info("Scan finished")
-		}(table)
+	// Build Segment client and define publish function for when we scan over the collections.
+	writeKey := m["--write-key"].(string)
+	if writeKey == "" {
+		logrus.Fatal("Write key is required when not in init mode.")
 	}
 
-	sem.Wait()
-	segmentClient.Close()
+	segmentClient := objects.New(writeKey)
+	defer segmentClient.Close()
+	setWrapper := func(o *objects.Object) {
+		if err := segmentClient.Set(o); err != nil {
+			logrus.WithFields(logrus.Fields{"id": o.ID, "collection": o.Collection, "properties": o.Properties}).Warn(err)
+		}
+	}
 
-	// Log status
-	for table := range description.Iter() {
-		logrus.WithFields(logrus.Fields{"schema": table.SchemaName, "table": table.TableName, "count": table.State.ScannedRows}).Info("Sync Finished")
+	if err := client.Sync(app, config, description, concurrency, setWrapper); err != nil {
+		logrus.Error("sql source failed to complete", err)
+		return
 	}
 }
