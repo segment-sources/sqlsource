@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Lilibuth12/sqlsource/domain"
 	"github.com/Sirupsen/logrus"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/segment-sources/sqlsource/domain"
 )
 
 type Postgres struct {

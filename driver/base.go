@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Lilibuth12/sqlsource/domain"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
-	"github.com/segment-sources/sqlsource/domain"
 	"github.com/segmentio/go-snakecase"
 	"github.com/segmentio/objects-go"
 )

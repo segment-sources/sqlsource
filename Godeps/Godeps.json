@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/segment-sources/sqlsource",
+	"ImportPath": "github.com/Lilibuth12/sqlsource",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v71",
 	"Deps": [

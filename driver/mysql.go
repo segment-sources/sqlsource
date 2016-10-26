@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Lilibuth12/sqlsource/domain"
 	"github.com/Sirupsen/logrus"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/segment-sources/sqlsource/domain"
 )
 
 type MySQL struct {
