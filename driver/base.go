@@ -28,19 +28,14 @@ type Base struct {
 	Driver Driver
 }
 
-func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) error {
+func (b *Base) ScanTable(t *domain.Table, publisher domain.ObjectPublisher) (err error) {
 	var lastPkValues []interface{}
 
 	for {
-		var err error
 		lastPkValues, err = b.scanTableChunk(t, lastPkValues, publisher)
 
-		if err != nil {
-			return err
-		}
-
-		if lastPkValues == nil {
-			return nil
+		if err != nil || lastPkValues == nil{
+			return
 		}
 	}
 }
@@ -55,10 +50,8 @@ func (b *Base) scanTableChunk(t *domain.Table, afterPKValues []interface{}, publ
 
 	defer rows.Close()
 
-	lastPkValues := make([]interface{}, len(t.PrimaryKeys))
-	rowsFound := false
+	lastPkValues := make([]interface{}, 0, len(t.PrimaryKeys))
 	for rows.Next() {
-		rowsFound = true
 		row := map[string]interface{}{}
 		if err := rows.MapScan(row); err != nil {
 			return nil, err
@@ -66,11 +59,13 @@ func (b *Base) scanTableChunk(t *domain.Table, afterPKValues []interface{}, publ
 		log.WithFields(log.Fields{"row": row, "table": t.TableName, "schema": t.SchemaName}).Debugf("Received Row")
 		t.IncrScanned()
 
-		for i, p := range t.PrimaryKeys {
-			lastPkValues[i] = row[p]
+		lastPkValues = lastPkValues[:0]
+		for _, p := range t.PrimaryKeys {
+			lastPkValues = append(lastPkValues, row[p])
 		}
 
 		row = b.Driver.Transform(row)
+
 		pks := []string{}
 		for _, p := range t.PrimaryKeys {
 			pks = append(pks, fmt.Sprintf("%v", row[p]))
@@ -87,7 +82,7 @@ func (b *Base) scanTableChunk(t *domain.Table, afterPKValues []interface{}, publ
 		return nil, err
 	}
 
-	if !rowsFound {
+	if len(lastPkValues) < len(t.PrimaryKeys) {
 		return nil, nil
 	}
 
